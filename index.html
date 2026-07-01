@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LifeBridge AI - Emergency Response & Disaster Assistant</title>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet GIS Mapping CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fas fa-bridge"></i>
+        </div>
+        <span class="brand-name">LifeBridge AI</span>
+      </div>
+
+      <!-- Disaster Status Dropdown Selection -->
+      <div class="disaster-selector-wrap">
+        <div class="section-label">Active Incident</div>
+        <select id="disaster-select-dropdown" class="disaster-select">
+          <option value="cyclone">Cyclone Winston (Category 4)</option>
+          <option value="flood">Riverine Flooding (Red River)</option>
+          <option value="earthquake">M6.8 Faultline Earthquake</option>
+        </select>
+      </div>
+
+      <!-- Nav Links -->
+      <nav class="nav-menu">
+        <li class="nav-item">
+          <a class="nav-link active" data-view="dashboard">
+            <i class="fas fa-columns"></i> Command Center
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-view="chat">
+            <i class="fas fa-robot"></i> AI Assistant
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-view="shelters">
+            <i class="fas fa-home"></i> Shelter Finder
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-view="roads">
+            <i class="fas fa-road"></i> Road Safety
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-view="medical">
+            <i class="fas fa-hand-holding-medical"></i> First Aid Guide
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-view="supplies">
+            <i class="fas fa-boxes-packing"></i> Supplies Planner
+          </a>
+        </li>
+      </nav>
+
+      <!-- Critical SOS Action -->
+      <button id="open-sos-btn" class="sos-trigger-btn">
+        <i class="fas fa-broadcast-tower"></i> BROADCAST SOS
+      </button>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Warning Ticker Banner -->
+      <div id="emergency-ticker" class="alert-ticker level-critical">
+        <span id="ticker-label-badge" class="ticker-label">Critical</span>
+        <div class="ticker-text-wrapper">
+          <span id="ticker-text-content" class="ticker-text">Loading ticker broadcasts...</span>
+        </div>
+      </div>
+
+      <!-- 1. DASHBOARD VIEW -->
+      <section id="view-dashboard" class="view-panel active">
+        <div class="view-header">
+          <div class="view-title">
+            <h1 id="active-disaster-title">Active Disaster</h1>
+            <p>Real-time coordination center and resource telemetry logs</p>
+          </div>
+        </div>
+
+        <!-- Stats Counter Panel -->
+        <div class="stats-grid">
+          <div class="glass-card stat-card">
+            <div class="stat-icon info">
+              <i class="fas fa-home"></i>
+            </div>
+            <div class="stat-content">
+              <span id="stat-shelters-val" class="stat-value">0</span>
+              <span class="stat-label">Active Shelters</span>
+            </div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-icon critical">
+              <i class="fas fa-road"></i>
+            </div>
+            <div class="stat-content">
+              <span id="stat-roads-val" class="stat-value">0</span>
+              <span class="stat-label">Blocked Roads</span>
+            </div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-icon warning">
+              <i class="fas fa-plus-square"></i>
+            </div>
+            <div class="stat-content">
+              <span id="stat-med-val" class="stat-value">0</span>
+              <span class="stat-label">Medical Stations</span>
+            </div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-icon safe">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+              <span id="stat-volunteers-val" class="stat-value">0</span>
+              <span class="stat-label">Active Volunteers</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Map + Feed Grid -->
+        <div class="dashboard-grid">
+          <!-- Left: Main Leaflet Map -->
+          <div class="glass-card dashboard-map-container">
+            <div class="map-header">
+              <span class="map-header-title">
+                <i class="fas fa-satellite"></i> Incident Command Map
+              </span>
+              <div class="map-legend">
+                <div class="legend-item"><span class="legend-dot blue"></span>Shelter</div>
+                <div class="legend-item"><span class="legend-dot orange"></span>Medical</div>
+                <div class="legend-item"><span class="legend-dot red"></span>Hazard</div>
+              </div>
+            </div>
+            <div class="map-frame">
+              <div id="leaflet-map"></div>
+            </div>
+          </div>
+
+          <!-- Right: Summary and active SOS reports -->
+          <div class="dashboard-sidebar">
+            <div class="glass-card disaster-info-card">
+              <span class="card-title">
+                <i class="fas fa-info-circle"></i> Incident Overview
+              </span>
+              <div id="disaster-summary-name" style="font-weight: 700; margin-bottom: 0.25rem;">Disaster Name</div>
+              <p id="disaster-summary-desc" class="disaster-desc">Incident summary goes here.</p>
+              
+              <div class="section-label" style="margin-top: 1rem;">Direct Hotlines</div>
+              <div id="emergency-contacts-container" class="emergency-contact-list">
+                <!-- Dynamically populated contacts -->
+              </div>
+            </div>
+
+            <!-- Active Beacons Log -->
+            <div class="glass-card beacons-card">
+              <span class="card-title" style="color: var(--accent-critical);">
+                <i class="fas fa-rss"></i> Active SOS Beacons
+              </span>
+              <div id="sos-beacons-list" class="beacons-list">
+                <!-- Dynamic SOS Beacons -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. AI ASSISTANT VIEW -->
+      <section id="view-chat" class="view-panel">
+        <div class="view-header">
+          <div class="view-title">
+            <h1>AI Crisis Assistant</h1>
+            <p>Offline-ready responder trained on survival manuals and telemetry data</p>
+          </div>
+        </div>
+        <div class="chatbot-panel-wrapper">
+          <div class="glass-card chat-container">
+            <div class="chat-messages" id="chat-messages">
+              <!-- Chat bubbles dynamically render here -->
+            </div>
+            <div class="chat-input-area">
+              <input type="text" id="chat-input-field" class="chat-input" placeholder="Ask a question about the active disaster (e.g. shelters, roads, safety)...">
+              <button id="chat-send-btn" class="chat-send-btn">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+          <div class="chat-sidebar">
+            <div class="glass-card" style="height: 100%; display: flex; flex-direction: column;">
+              <div class="section-label">Suggested Inquiries</div>
+              <div class="quick-questions-list">
+                <button class="quick-q-btn" data-q="Where is the nearest shelter?">
+                  <i class="fas fa-question-circle"></i> Nearest shelter?
+                </button>
+                <button class="quick-q-btn" data-q="Which roads are blocked?">
+                  <i class="fas fa-question-circle"></i> Road blockages?
+                </button>
+                <button class="quick-q-btn" data-q="What emergency supplies are needed?">
+                  <i class="fas fa-question-circle"></i> Supply checklist?
+                </button>
+                <button class="quick-q-btn" data-q="How do I get medical help?">
+                  <i class="fas fa-question-circle"></i> Medical aid stations?
+                </button>
+              </div>
+              
+              <div class="modal-info-alert" style="margin-top: auto;">
+                <i class="fas fa-shield-alt" style="font-size: 1.15rem; color:var(--accent-info); margin-top:2px;"></i>
+                <div>
+                  <strong style="display:block; margin-bottom: 0.15rem; color: white;">CELLULAR OFFLINE CAPABLE</strong>
+                  Runs completely in browser cache using compiled emergency manuals. Functional during severe outages.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. SHELTERS VIEW -->
+      <section id="view-shelters" class="view-panel">
+        <div class="view-header">
+          <div class="view-title">
+            <h1>Evacuation Shelters</h1>
+            <p>Real-time capacities, resources, and live distance routing</p>
+          </div>
+        </div>
+        <div class="shelter-layout">
+          <!-- Directory -->
+          <div class="shelter-directory">
+            <div class="search-bar">
+              <i class="fas fa-search"></i>
+              <input type="text" id="shelter-search-input" placeholder="Search shelters by name...">
+            </div>
+            <div id="shelter-cards-container" class="shelter-cards-list">
+              <!-- Dynamically populated shelter cards -->
+            </div>
+          </div>
+
+          <!-- Detail View -->
+          <div class="glass-card shelter-details-panel">
+            <div class="shelter-title-block">
+              <h2 id="shelter-detail-name">Shelter Name</h2>
+              <p id="shelter-detail-address">Shelter Address</p>
+              <div style="margin-top:0.5rem; display:flex; gap:1.5rem; font-size:0.85rem;">
+                <span>Hotline: <strong id="shelter-detail-phone">+1 (305) 555-xxxx</strong></span>
+                <span>Distance: <strong id="shelter-detail-distance" style="color:var(--accent-info);">0.0 miles</strong></span>
+              </div>
+            </div>
+
+            <!-- Detail GIS Route Map -->
+            <div class="shelter-detail-map-frame" id="shelter-detail-map">
+              <div id="detail-leaflet-map"></div>
+            </div>
+
+            <div class="shelter-info-sections">
+              <div class="section-label">Critical Supplies Tally</div>
+              <div class="resource-grid">
+                <div class="resource-card">
+                  <span class="resource-name"><i class="fas fa-bed"></i> Beds</span>
+                  <span id="res-beds" class="resource-status">Unknown</span>
+                </div>
+                <div class="resource-card">
+                  <span class="resource-name"><i class="fas fa-apple-alt"></i> Food</span>
+                  <span id="res-food" class="resource-status">Unknown</span>
+                </div>
+                <div class="resource-card">
+                  <span class="resource-name"><i class="fas fa-faucet-drip"></i> Water</span>
+                  <span id="res-water" class="resource-status">Unknown</span>
+                </div>
+                <div class="resource-card">
+                  <span class="resource-name"><i class="fas fa-briefcase-medical"></i> Meds</span>
+                  <span id="res-medicine" class="resource-status">Unknown</span>
+                </div>
+              </div>
+
+              <div class="shelter-actions">
+                <button class="btn btn-primary" onclick="alert('Mock route directions generated. Follow local emergency safety officers.')">
+                  <i class="fas fa-route"></i> Get Navigation Instructions
+                </button>
+                <button class="btn btn-secondary" onclick="alert('Location coordinates copied to clipboard.')">
+                  <i class="fas fa-copy"></i> Copy Coordinates
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. ROAD SAFETY VIEW -->
+      <section id="view-roads" class="view-panel">
+        <div class="view-header">
+          <div class="view-title">
+            <h1>Road Safety & Hazards</h1>
+            <p>Active traffic bottlenecks, structural debris blockages, and flooded areas</p>
+          </div>
+        </div>
+        <div class="glass-card">
+          <div class="section-label">Hazard Log Registry</div>
+          <div class="roads-table-container">
+            <table class="roads-table">
+              <thead>
+                <tr>
+                  <th>Road segment</th>
+                  <th>Status</th>
+                  <th>Incident Details / Blocking Cause</th>
+                </tr>
+              </thead>
+              <tbody id="roads-table-body">
+                <!-- Dynamically populated road segments -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. MEDICAL FIRST AID GUIDE VIEW -->
+      <section id="view-medical" class="view-panel">
+        <div class="view-header">
+          <div class="view-title">
+            <h1>Emergency Triage Guide</h1>
+            <p>Instant step-by-step first-aid manuals for disaster casualties</p>
+          </div>
+        </div>
+        <div class="medical-grid">
+          <!-- Guide Menu -->
+          <div class="medical-menu">
+            <div class="search-bar" style="margin-bottom: 0.5rem;">
+              <i class="fas fa-search"></i>
+              <input type="text" id="medical-search-input" placeholder="Search first aid steps...">
+            </div>
+            <div id="medical-menu-list" style="display:flex; flex-direction:column; gap:0.5rem;">
+              <!-- Medical guide list elements -->
+            </div>
+          </div>
+
+          <!-- Guide Display -->
+          <div class="glass-card medical-guide-content" id="medical-guide-display">
+            <!-- Active first aid guide details -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. SUPPLIES PLANNER VIEW -->
+      <section id="view-supplies" class="view-panel">
+        <div class="view-header">
+          <div class="view-title">
+            <h1>Emergency Supplies Planner</h1>
+            <p>Check off mandatory supplies and calculate your survival resource runway</p>
+          </div>
+        </div>
+        <div class="supplies-layout">
+          <!-- Left: Runway Calculator -->
+          <div class="glass-card calculator-card">
+            <div class="section-label">Runway Duration Calculator</div>
+            
+            <div class="input-group">
+              <label for="calc-family">Family Size (Persons)</label>
+              <div class="input-row">
+                <input type="range" id="calc-family" min="1" max="10" value="4">
+                <span id="calc-family-val" class="input-val-badge">4</span>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="calc-water">Drinking Water (Gallons)</label>
+              <div class="input-row">
+                <input type="range" id="calc-water" min="0" max="50" value="12">
+                <span id="calc-water-val" class="input-val-badge">12</span>
+              </div>
+              <small style="color:var(--color-text-muted); font-size:0.75rem; margin-top:-0.25rem;">Required: 1 gallon per person per day.</small>
+            </div>
+
+            <div class="input-group">
+              <label for="calc-food">Non-perishable Food (Servings)</label>
+              <div class="input-row">
+                <input type="range" id="calc-food" min="0" max="150" value="36">
+                <span id="calc-food-val" class="input-val-badge">36</span>
+              </div>
+              <small style="color:var(--color-text-muted); font-size:0.75rem; margin-top:-0.25rem;">Required: 3 servings per person per day.</small>
+            </div>
+
+            <div id="calc-result-box" class="calc-result-box">
+              <div id="calc-result-days" class="calc-days">0</div>
+              <div class="calc-days-label">Estimated Resource Runway (Days)</div>
+              <div id="calc-result-advice" style="margin-top: 1rem; font-size:0.8rem; font-weight:600;">Calculating...</div>
+            </div>
+          </div>
+
+          <!-- Right: Checklist -->
+          <div class="glass-card">
+            <div class="section-label" id="checklist-progress-text">Kit Preparedness: 0/0 items (0%)</div>
+            <p style="color:var(--color-text-muted); font-size:0.85rem; margin-bottom:1rem;">Ensure all items are packed in a waterproof go-bag.</p>
+            <div id="checklist-items-list" class="checklist-list">
+              <!-- Checklist items populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- SOS Modal Broadcast Form -->
+    <div class="modal-overlay" id="sos-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2><i class="fas fa-exclamation-triangle"></i> EMERGENCY SOS BROADCAST</h2>
+          <button class="modal-close" id="sos-modal-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-info-alert">
+            <i class="fas fa-info-circle" style="font-size: 1.25rem; color: #f87171;"></i>
+            <div>
+              <strong>TRANSMISSION NOTICE:</strong>
+              This will mock-broadcast your current coordinates (GPS) and information to the rescue services registry dashboard.
+            </div>
+          </div>
+          
+          <div class="input-group">
+            <label for="sos-input-name">Contact Full Name</label>
+            <input type="text" id="sos-input-name" class="sos-form-input" placeholder="e.g. Sarah Connor">
+          </div>
+
+          <div class="input-group">
+            <label for="sos-input-phone">Callback Phone Number</label>
+            <input type="tel" id="sos-input-phone" class="sos-form-input" placeholder="e.g. +1 (305) 555-0199">
+          </div>
+
+          <div class="input-group">
+            <label for="sos-input-people">Number of People in Danger</label>
+            <select id="sos-input-people" class="sos-form-input" style="background-color: rgba(8,12,20,0.8); cursor: pointer;">
+              <option value="1">1 Person (Just Me)</option>
+              <option value="2">2 People</option>
+              <option value="3">3 People</option>
+              <option value="4">4 People</option>
+              <option value="5">5+ People</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="sos-input-details">Emergency Situation / Critical Needs</label>
+            <textarea id="sos-input-details" class="sos-form-input" rows="3" placeholder="e.g. Medical emergency, rising floodwaters, debris entrapment..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="sos-modal-cancel">Cancel</button>
+          <button class="btn" id="sos-modal-submit" style="background-color: var(--accent-critical); color: white;">
+            <i class="fas fa-broadcast-tower"></i> Transmit Beacon
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- App JavaScript Modules -->
+  <script src="js/db.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/medical.js"></script>
+  <script src="js/supplies.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
