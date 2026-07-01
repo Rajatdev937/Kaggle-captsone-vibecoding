@@ -103,6 +103,22 @@ Make sure you have Node.js installed to serve the files locally.
 
 ---
 
+## 📸 App Preview Screenshots
+
+### 1. Incident Command Center Dashboard
+The main coordination dashboard displays telemetry statistics, active incident bulletins, and an interactive Leaflet GIS map tracking shelters, medical aid stations, and road hazards.
+![Command Center Dashboard](images/command_center.png)
+
+### 2. AI Crisis Chatbot Assistant
+Switching to the Assistant view allows citizens to query the offline-ready responder for disaster recommendations.
+![AI Crisis Assistant](images/ai_assistant.png)
+
+### 3. Evacuation Shelter Finder
+Selecting a shelter displays real-time bed, food, water, and medicine levels, and highlights the safety route from the simulated user location.
+![Evacuation Shelter Details](images/shelter_finder.png)
+
+---
+
 ## 🖥️ Interactive Walkthrough & Usage
 
 1. **Changing Incident Context**: Click the dropdown in the sidebar to switch between *Cyclone Winston*, *Riverine Flooding*, and *M6.8 Faultline Earthquake*. Observe how the entire dashboard (ticker message, statistics counters, Leaflet map markers, checklist parameters, and chatbot context) updates instantly.
